@@ -4,14 +4,25 @@ import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
 import { useEffect, useState } from "react";
 import * as Location from "expo-location";
-import fetchWeather from "@/services/api";
-import SmallCard from "@/components/SmallCard"
+import SmallCard from "@/components/SmallCard";
+import MainCard from "@/components/MainCard";
+import fetchWeatherCurrent, { fetchWeatherHourly } from "@/services/api";
+import { weatherIconsDay, weatherIconsNight } from "@/services/wetherCode"
 
 export default function Index() {
   const [location, setLocation] = useState(null);
   const [geocode, setGeocode] = useState(null);
-  const [weather, setWeather] = useState(null);
+  const [currentWeather, setCurrentWeather] = useState(null);
+  const [hourlyWeather, setHourlyWeather] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const wCode = currentWeather?.weatherCode;
+  const weatherIcon = weatherIconsDay[wCode] ?? {label: "Clear Sky", icon: "clearDay"};
+  console.log("weather icon ", weatherIcon)
+
+  const now = new Date();
+  const currentHour = now.getHours();
+  console.log("current hour:", currentHour)
 
   useEffect(() => {
     (async () => {
@@ -26,8 +37,15 @@ export default function Index() {
 
   useEffect(() => {
     if (!location) return;
-    fetchWeather(location.coords.latitude, location.coords.longitude).then(
-      (data) => setWeather(data),
+    fetchWeatherCurrent(location.coords.latitude, location.coords.longitude).then(
+      (data) => setCurrentWeather(data),
+    );
+  }, [location]);
+
+  useEffect(() => {
+    if (!location) return;
+    fetchWeatherHourly(location.coords.latitude, location.coords.longitude).then(
+      (data) => setHourlyWeather(data),
     );
   }, [location]);
 
@@ -69,28 +87,54 @@ export default function Index() {
         className="absolute w-full h-full z-0"
       />
       <ScrollView className="w-full">
-        <View className="h-auto w-10/12 bg-white/20 self-center items-center pt-4 mt-5 border-4 border-t-0 border-b-8 border-black/20 rounded-3xl">
-          <View className="flex-row justify-center items-center">
-            <Image
-              source={icons.location}
-              className="size-4 mr-1"
-              tintColor="white"
-            />
-            <Text className="text-xl color-white font-poppins">
-              {geocode?.city}
-            </Text>
-          </View>
-          <View className="items-center">
-            <Image source={icons.clearNight} className="size-32 w-44 h-42" />
-            <Text className="text-6xl color-white font-poppins mb-5">
-              {Math.round(weather?.temperature)}
-              {`\u00B0`}
-            </Text>
-          </View>
+        <MainCard weather={currentWeather} geocode={geocode} icon={icons[weatherIcon.icon]} />
+        <View className="flex-row self-center justify-between w-10/12">
+          <SmallCard
+            icon={icons.wind}
+            value={Math.round(currentWeather?.windspeed)}
+            unit="kph"
+            size="size-5 w-7"
+            text="Wind Speed"
+          />
+          <SmallCard
+            icon={icons.humidity}
+            value={Math.round(currentWeather?.humidity)}
+            unit="%"
+            size="size-6"
+            text="Humidity"
+          />
         </View>
         <View className="flex-row self-center justify-between w-10/12">
-          <SmallCard icon={icons.wind} />
-          <SmallCard />
+          <SmallCard
+            icon={icons.visibility}
+            value={Math.round((hourlyWeather?.visibility[currentHour])/1000)}
+            unit="km"
+            size="size-6"
+            text="Visibility"
+          />
+          <SmallCard
+            icon={icons.thermometer}
+            value={Math.round(currentWeather?.apparentTemp)}
+            unit={`\u00B0`}
+            size="size-6"
+            text="Feels Like"
+          />
+        </View>
+        <View className="flex-row self-center justify-between w-10/12">
+          <SmallCard
+            icon={icons.uv}
+            value={Math.round(currentWeather?.uv)}
+            unit="Weak"
+            size="size-6"
+            text="UV"
+          />
+          <SmallCard
+            icon={icons.air}
+            value={Math.round(currentWeather?.airPressure)}
+            unit="hPa"
+            size="size-6 w-9"
+            text="Air Pressure"
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
