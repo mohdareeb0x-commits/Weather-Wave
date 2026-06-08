@@ -16,7 +16,7 @@ const fetchWeatherCurrent = async (latitude1, longitude1) => {
         ],
     }
 
-    const url = "https://api.open-meteo.com/v1/forecast";
+    const url = process.env.EXPO_PUBLIC_BASE_URL;
     const responses = await fetchWeatherApi(url, params);
 
     const response = responses[0];
@@ -47,7 +47,7 @@ const fetchWeatherHourly = async (latitude1, longitude1) => {
         forecast_days: 1,
     }
 
-    const url = "https://api.open-meteo.com/v1/forecast";
+    const url = process.env.EXPO_PUBLIC_BASE_URL;
     const responses = await fetchWeatherApi(url, params);
 
     const response = responses[0];
