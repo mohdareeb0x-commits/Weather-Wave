@@ -18,9 +18,6 @@ export default function Index() {
   const [currentWeather, setCurrentWeather] = useState(null);
   const [hourlyWeather, setHourlyWeather] = useState(null);
   const [loading, setLoading] = useState(true);
-  // const [locationReady, setLocationReady] = useState(true);
-  // const [internetReady, setInternetReady] = useState(true);
-  // const [fetchError, setFetchError] = useState(false);
   const [requirementErrors, setReqError] = useState(false);
 
   const now = new Date();
