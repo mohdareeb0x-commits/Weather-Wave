@@ -1,4 +1,3 @@
-import { icons } from "../constants/icons"
 
 const weatherIconsDay = {
     0: {label: "Clear Sky", icon: "clearDay"},
@@ -47,29 +46,5 @@ const weatherIconsNight = {
     96: {label: "Thunderstorm + Hail", icon: "thunderstorms"},
     99: {label: "Heavy Thunderstorm + Hail", icon: "severThunderstorms"},
 }
-
-// const weatherIconsNight = {
-//     0: {label: "Clear Sky", icon: icons.clearNight},
-//     1: {label: "Mainly Clear", icon: icons.cloudy1night},
-//     2: {label: "Partly Cloudy", icon: icons.cloudy2night},
-//     3: {label: "Overcast", icon: icons.cloudy},
-//     45: {label: "Fog", icon: icons.fogNight},
-//     48: {label: "Icy Fog", icon: icons.fog},
-//     51: {label: "Light Drizzle", icon: icons.rainy1night},
-//     53: {label: "Drizzle", icon: icons.rainy2night},
-//     55: {label: "Heavy Drizzle", icon: icons.rainy3night},
-//     61: {label: "Light Rain", icon: icons.rainy1},
-//     63: {label: "Rain", icon: icons.rainy2},
-//     65: {label: "Heavy Rain", icon: icons.rainy3},
-//     71: {label: "Light Snow", icon: icons.snowy1},
-//     73: {label: "Snow", icon: icons.snowy2},
-//     75: {label: "Heavy Snow", icon: icons.snowy3},
-//     80: {label: "Light Showers", icon: icons.rainy1night},
-//     81: {label: "Showers", icon: icons.rainy2night},
-//     82: {label: "Heavy Showers", icon: icons.rainy3night},
-//     95: {label: "Thunderstorm", icon: icons.scatteredThunderstorms},
-//     96: {label: "Thunderstorm + Hail", icon: icons.thunderstorms},
-//     99: {label: "Heavy Thunderstorm + Hail", icon: icons.severThunderstorms},
-// }
 
 export {weatherIconsDay, weatherIconsNight};

@@ -1,14 +1,17 @@
-import { Image, ScrollView, Text, View, ActivityIndicator } from "react-native";
+import { Image, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
 import { useEffect, useState } from "react";
 import * as Location from "expo-location";
+import * as Network from "expo-network";
 import SmallCard from "@/components/SmallCard";
 import LoadingScreen from "@/components/LoadingScreen";
+import ErrorScreen from "@/components/ErrorScren";
 import MainCard from "@/components/MainCard";
 import fetchWeatherCurrent, { fetchWeatherHourly } from "@/services/api";
-import { weatherIconsDay, weatherIconsNight } from "@/services/wetherCode"
+import checkInternet from "@/services/checkInternet";
+import { weatherIconsDay, weatherIconsNight } from "@/services/wetherCode";
 
 export default function Index() {
   const [location, setLocation] = useState(null);
@@ -16,16 +19,18 @@ export default function Index() {
   const [currentWeather, setCurrentWeather] = useState(null);
   const [hourlyWeather, setHourlyWeather] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [locationReady, setLocationReady] = useState(true);
+  const [internetReady, setInternetReady] = useState(true);
 
-  
   const now = new Date();
   const currentHour = now.getHours();
+
   const iconPack = currentWeather?.isDay ? weatherIconsDay : weatherIconsNight;
   const wCode = currentWeather?.weatherCode;
-  const weatherIcon = iconPack[wCode] ?? {label: "Clear Sky", icon: "clearDay"};
-  console.log("weather icon ", weatherIcon)
-
-  console.log("current hour:", currentHour)
+  const weatherIcon = iconPack[wCode] ?? {
+    label: "Clear Sky",
+    icon: "clearDay",
+  };
 
   useEffect(() => {
     (async () => {
@@ -33,23 +38,41 @@ export default function Index() {
       if (status !== "granted") return;
 
       const loc = await Location.getCurrentPositionAsync({});
-      console.log(loc);
       setLocation(loc);
     })();
   }, []);
 
   useEffect(() => {
     if (!location) return;
-    fetchWeatherCurrent(location.coords.latitude, location.coords.longitude).then(
-      (data) => setCurrentWeather(data),
-    );
+    const load = async () => {
+      const hasInternet = await checkInternet();
+      if (!hasInternet) {
+        setInternetReady(false);
+        return;
+      }
+
+      fetchWeatherCurrent(
+        location.coords.latitude,
+        location.coords.longitude,
+      ).then((data) => setCurrentWeather(data));
+    };
+    load();
   }, [location]);
 
   useEffect(() => {
     if (!location) return;
-    fetchWeatherHourly(location.coords.latitude, location.coords.longitude).then(
-      (data) => setHourlyWeather(data),
-    );
+    const load = async () => {
+      const hasInternet = await checkInternet();
+      if (!hasInternet) {
+        setInternetReady(false);
+        return;
+      }
+      fetchWeatherHourly(
+        location.coords.latitude,
+        location.coords.longitude,
+      ).then((data) => setHourlyWeather(data));
+    };
+    load();
   }, [location]);
 
   useEffect(() => {
@@ -59,16 +82,41 @@ export default function Index() {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       });
-      console.log(result[0]);
       setGeocode(result[0]);
       setLoading(false);
     })();
   }, [location]);
 
-  if (loading) {
-    return (
-      <LoadingScreen />
-    );
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!location) {
+        setLocationReady(false);
+      }
+    }, 25 * 1000);
+    return () => clearTimeout(timeout);
+  }, [location]);
+
+  if (loading && locationReady) {
+    return <LoadingScreen />;
+  }
+
+  if (!internetReady) {
+    return <ErrorScreen text="No internet connection" />;
+  }
+
+  if (!locationReady) {
+    return <ErrorScreen text="Please enable your location" />;
+  }
+
+  let uv = "";
+  if (currentWeather?.uv <= 2) {
+    uv = "Very Weak";
+  } else if (currentWeather?.uv >= 3 || currentWeather?.uv <= 6) {
+    uv = "Weak";
+  } else if (currentWeather?.uv >= 7 || currentWeather?.uv <= 10) {
+    uv = "Strong";
+  } else if (currentWeather?.uv >= 11) {
+    uv = "Very Strong";
   }
 
   return (
@@ -79,30 +127,18 @@ export default function Index() {
         className="absolute w-full h-full z-0"
       />
       <ScrollView className="w-full">
-        <MainCard weather={currentWeather} geocode={geocode} icon={icons[weatherIcon.icon]} />
+        <MainCard
+          weather={currentWeather}
+          geocode={geocode}
+          icon={icons[weatherIcon.icon]}
+        />
         <View className="flex-row self-center justify-between w-10/12">
           <SmallCard
-            icon={icons.wind}
-            value={Math.round(currentWeather?.windspeed)}
-            unit="kph"
-            size="size-5 w-7"
-            text="Wind Speed"
-          />
-          <SmallCard
-            icon={icons.humidity}
-            value={Math.round(currentWeather?.humidity)}
-            unit="%"
+            icon={icons.uv}
+            value={Math.round(currentWeather?.uv)}
+            unit={uv}
             size="size-6"
-            text="Humidity"
-          />
-        </View>
-        <View className="flex-row self-center justify-between w-10/12">
-          <SmallCard
-            icon={icons.visibility}
-            value={Math.round((hourlyWeather?.visibility[currentHour])/1000)}
-            unit="km"
-            size="size-6"
-            text="Visibility"
+            text="UV"
           />
           <SmallCard
             icon={icons.thermometer}
@@ -114,18 +150,34 @@ export default function Index() {
         </View>
         <View className="flex-row self-center justify-between w-10/12">
           <SmallCard
-            icon={icons.uv}
-            value={Math.round(currentWeather?.uv)}
-            unit="Weak"
+            icon={icons.humidity}
+            value={Math.round(currentWeather?.humidity)}
+            unit="%"
             size="size-6"
-            text="UV"
+            text="Humidity"
           />
+          <SmallCard
+            icon={icons.wind}
+            value={Math.round(currentWeather?.windspeed)}
+            unit="kph"
+            size="size-5 w-7"
+            text="Wind Speed"
+          />
+        </View>
+        <View className="flex-row self-center justify-between w-10/12">
           <SmallCard
             icon={icons.air}
             value={Math.round(currentWeather?.airPressure)}
             unit="hPa"
             size="size-6 w-9"
             text="Air Pressure"
+          />
+          <SmallCard
+            icon={icons.visibility}
+            value={Math.round(hourlyWeather?.visibility[currentHour] / 1000)}
+            unit="km"
+            size="size-6"
+            text="Visibility"
           />
         </View>
       </ScrollView>

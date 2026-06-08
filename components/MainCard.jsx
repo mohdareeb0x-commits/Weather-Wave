@@ -1,10 +1,9 @@
-import { Image, Pressable, Text, TextInput, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { icons } from "@/constants/icons";
-import { useRouter } from "expo-router";
 
 const MainCard = ({ geocode, weather, icon }) => {
   return (
-    <View className="h-60 w-11/12 bg-white/20 self-center items-center pt-4 mt-5 border-4 border-t-0 border-b-8 border-black/20 rounded-3xl">
+    <View className="h-60 w-11/12 self-center items-center pt-4 mt-5">
           <View className="flex-row justify-center items-center mb-4">
             <Image
               source={icons.location}

@@ -57,7 +57,6 @@ const fetchWeatherHourly = async (latitude1, longitude1) => {
     const weatherData = {
         visibility: hourly.variables(0).valuesArray(),
     }
-    console.log(weatherData)
     return weatherData;
 }
 

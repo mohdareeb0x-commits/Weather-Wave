@@ -1,4 +1,4 @@
-import { Image, Pressable, Text, TextInput, View } from "react-native";
+import { Image, Text, View } from "react-native";
 
 const SmallCard = ({ icon, text, value, unit, size }) => {
   return (
