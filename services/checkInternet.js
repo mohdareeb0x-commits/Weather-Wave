@@ -8,7 +8,7 @@ const checkInternet = async () => {
         return false;
     }
 
-    return true
+    return true;
 }
 
 export default checkInternet;
