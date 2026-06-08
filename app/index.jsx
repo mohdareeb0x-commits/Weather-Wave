@@ -33,8 +33,10 @@ export default function Index() {
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
-
+      if (status !== "granted"){ 
+        setReqError("location-error")
+        return;
+      }
       try {
         const loc = await Location.getCurrentPositionAsync({});
         setLocation(loc);
@@ -81,24 +83,15 @@ export default function Index() {
     load();
   }, [location]);
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!location) {
-        setReqError("location-error");
-      }
-    }, 35 * 1000);
-    return () => clearTimeout(timeout);
-  }, [location]);
-
   if (loading && !requirementErrors) {
     return <LoadingScreen />;
   }
 
-  if (requirementErrors == "internet-error") {
+  if (requirementErrors === "internet-error") {
     return <ErrorScreen text="No internet connection" />;
-  } else if (requirementErrors == "location-error") {
+  } else if (requirementErrors === "location-error") {
     return <ErrorScreen text="Please enable your location" />;
-  } else if (requirementErrors == "fetch-error") {
+  } else if (requirementErrors === "fetch-error") {
     return <ErrorScreen text="Internal server error" />;
   }
 
@@ -125,6 +118,7 @@ export default function Index() {
           weather={currentWeather}
           geocode={geocode}
           icon={icons[weatherIcon.icon]}
+          label={weatherIcon.label}
         />
         <View className="flex-row self-center justify-between w-10/12">
           <SmallCard
