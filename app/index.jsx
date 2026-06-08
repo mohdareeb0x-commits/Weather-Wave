@@ -18,9 +18,10 @@ export default function Index() {
   const [currentWeather, setCurrentWeather] = useState(null);
   const [hourlyWeather, setHourlyWeather] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [locationReady, setLocationReady] = useState(true);
-  const [internetReady, setInternetReady] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
+  // const [locationReady, setLocationReady] = useState(true);
+  // const [internetReady, setInternetReady] = useState(true);
+  // const [fetchError, setFetchError] = useState(false);
+  const [requirementErrors, setReqError] = useState(false);
 
   const now = new Date();
   const currentHour = now.getHours();
@@ -37,8 +38,13 @@ export default function Index() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
 
-      const loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc);
+      try {
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc);
+      } catch(error) {
+        console.log(error)
+        setReqError("location-error")
+      }
     })();
   }, []);
 
@@ -47,67 +53,55 @@ export default function Index() {
     const load = async () => {
       const hasInternet = await checkInternet();
       if (!hasInternet) {
-        setInternetReady(false);
+        setReqError("internet-error");
         return;
       }
 
-      fetchWeatherCurrent(location.coords.latitude, location.coords.longitude)
-        .then((data) => setCurrentWeather(data))
-        .catch((error) => setFetchError(true));
-    };
-    load();
-  }, [location]);
-
-  useEffect(() => {
-    if (!location) return;
-    const load = async () => {
-      const hasInternet = await checkInternet();
-      if (!hasInternet) {
-        setInternetReady(false);
-        return;
+      try {
+        const [currentData, hourlyData, geocode] = await Promise.all([
+          fetchWeatherCurrent(
+            location.coords.latitude,
+            location.coords.longitude,
+          ),
+          fetchWeatherHourly(
+            location.coords.latitude,
+            location.coords.longitude,
+          ),
+          Location.reverseGeocodeAsync({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          }),
+        ]);
+        setCurrentWeather(currentData);
+        setHourlyWeather(hourlyData);
+        setGeocode(geocode[0]);
+        setLoading(false);
+      } catch (error) {
+        console.log("NEW ERROR", error);
+        setReqError("fetch-error");
       }
-      
-      fetchWeatherHourly(location.coords.latitude, location.coords.longitude)
-        .then((data) => setHourlyWeather(data))
-        .catch((error) => setFetchError(true));
     };
     load();
-  }, [location]);
-
-  useEffect(() => {
-    if (!location) return;
-    (async () => {
-      const result = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-      setGeocode(result[0]);
-      setLoading(false);
-    })();
   }, [location]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!location) {
-        setLocationReady(false);
+        setReqError("location-error");
       }
     }, 35 * 1000);
     return () => clearTimeout(timeout);
   }, [location]);
 
-  if (loading && locationReady && !fetchError) {
+  if (loading && !requirementErrors) {
     return <LoadingScreen />;
   }
 
-  if (!internetReady) {
+  if (requirementErrors == "internet-error") {
     return <ErrorScreen text="No internet connection" />;
-  }
-
-  if (!locationReady) {
+  } else if (requirementErrors == "location-error") {
     return <ErrorScreen text="Please enable your location" />;
-  }
-
-  if (fetchError) {
+  } else if (requirementErrors == "fetch-error") {
     return <ErrorScreen text="Internal server error" />;
   }
 

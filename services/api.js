@@ -36,14 +36,14 @@ const fetchWeatherCurrent = async (latitude1, longitude1) => {
     };
     console.log(weatherData);
     return weatherData;
-} catch (err) {
+  } catch (err) {
     throw new Error("Internal server error");
-}
+  }
 };
 const fetchWeatherHourly = async (latitude1, longitude1) => {
-    try {
-        const params = {
-            latitude: latitude1,
+  try {
+    const params = {
+      latitude: latitude1,
       longitude: longitude1,
       hourly: ["visibility"],
       forecast_days: 1,
@@ -60,7 +60,7 @@ const fetchWeatherHourly = async (latitude1, longitude1) => {
       visibility: hourly.variables(0).valuesArray(),
     };
     return weatherData;
-} catch (err) {
+  } catch (err) {
     throw new Error("Internal server error");
   }
 };
