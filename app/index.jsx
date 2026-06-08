@@ -4,10 +4,9 @@ import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
 import { useEffect, useState } from "react";
 import * as Location from "expo-location";
-import * as Network from "expo-network";
 import SmallCard from "@/components/SmallCard";
 import LoadingScreen from "@/components/LoadingScreen";
-import ErrorScreen from "@/components/ErrorScren";
+import ErrorScreen from "@/components/ErrorScreen";
 import MainCard from "@/components/MainCard";
 import fetchWeatherCurrent, { fetchWeatherHourly } from "@/services/api";
 import checkInternet from "@/services/checkInternet";
@@ -21,6 +20,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [locationReady, setLocationReady] = useState(true);
   const [internetReady, setInternetReady] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   const now = new Date();
   const currentHour = now.getHours();
@@ -54,7 +54,7 @@ export default function Index() {
       fetchWeatherCurrent(
         location.coords.latitude,
         location.coords.longitude,
-      ).then((data) => setCurrentWeather(data));
+      ).then((data) => setCurrentWeather(data)).catch(error => setFetchError(true));
     };
     load();
   }, [location]);
@@ -70,7 +70,7 @@ export default function Index() {
       fetchWeatherHourly(
         location.coords.latitude,
         location.coords.longitude,
-      ).then((data) => setHourlyWeather(data));
+      ).then((data) => setHourlyWeather(data)).catch(error => setFetchError(true));
     };
     load();
   }, [location]);
@@ -92,11 +92,11 @@ export default function Index() {
       if (!location) {
         setLocationReady(false);
       }
-    }, 25 * 1000);
+    }, 35 * 1000);
     return () => clearTimeout(timeout);
   }, [location]);
 
-  if (loading && locationReady) {
+  if (loading && locationReady && !fetchError) {
     return <LoadingScreen />;
   }
 
@@ -108,12 +108,16 @@ export default function Index() {
     return <ErrorScreen text="Please enable your location" />;
   }
 
+  if (fetchError) {
+    return <ErrorScreen text="Internal server error" />;
+  }
+
   let uv = "";
   if (currentWeather?.uv <= 2) {
     uv = "Very Weak";
-  } else if (currentWeather?.uv >= 3 || currentWeather?.uv <= 6) {
+  } else if (currentWeather?.uv >= 3 && currentWeather?.uv <= 6) {
     uv = "Weak";
-  } else if (currentWeather?.uv >= 7 || currentWeather?.uv <= 10) {
+  } else if (currentWeather?.uv >= 7 && currentWeather?.uv <= 10) {
     uv = "Strong";
   } else if (currentWeather?.uv >= 11) {
     uv = "Very Strong";
