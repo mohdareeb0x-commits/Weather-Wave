@@ -5,6 +5,7 @@ import { images } from "@/constants/images";
 import { useEffect, useState } from "react";
 import * as Location from "expo-location";
 import SmallCard from "@/components/SmallCard";
+import LoadingScreen from "@/components/LoadingScreen";
 import MainCard from "@/components/MainCard";
 import fetchWeatherCurrent, { fetchWeatherHourly } from "@/services/api";
 import { weatherIconsDay, weatherIconsNight } from "@/services/wetherCode"
@@ -16,12 +17,14 @@ export default function Index() {
   const [hourlyWeather, setHourlyWeather] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const wCode = currentWeather?.weatherCode;
-  const weatherIcon = weatherIconsDay[wCode] ?? {label: "Clear Sky", icon: "clearDay"};
-  console.log("weather icon ", weatherIcon)
-
+  
   const now = new Date();
   const currentHour = now.getHours();
+  const iconPack = currentWeather?.isDay ? weatherIconsDay : weatherIconsNight;
+  const wCode = currentWeather?.weatherCode;
+  const weatherIcon = iconPack[wCode] ?? {label: "Clear Sky", icon: "clearDay"};
+  console.log("weather icon ", weatherIcon)
+
   console.log("current hour:", currentHour)
 
   useEffect(() => {
@@ -64,18 +67,7 @@ export default function Index() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 items-center bg-black">
-        <Image
-          source={images.bg}
-          resizeMode="cover"
-          className="absolute w-full h-full z-0"
-        />
-        <ActivityIndicator
-          size="large"
-          color="white"
-          className="mt-20 self-center"
-        />
-      </SafeAreaView>
+      <LoadingScreen />
     );
   }
 

@@ -12,6 +12,7 @@ const fetchWeatherCurrent = async (latitude1, longitude1) => {
             "weather_code",
             "surface_pressure",
             "uv_index",
+            "is_day",
         ],
     }
 
@@ -30,6 +31,7 @@ const fetchWeatherCurrent = async (latitude1, longitude1) => {
         weatherCode: current.variables(4).value(),
         airPressure: current.variables(5).value(),
         uv: current.variables(6).value(),
+        isDay: current.variables(7).value(),
     }
     console.log(weatherData)
     return weatherData;
