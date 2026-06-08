@@ -10,7 +10,7 @@ import ErrorScreen from "@/components/ErrorScreen";
 import MainCard from "@/components/MainCard";
 import fetchWeatherCurrent, { fetchWeatherHourly } from "@/services/api";
 import checkInternet from "@/services/checkInternet";
-import { weatherIconsDay, weatherIconsNight } from "@/services/wetherCode";
+import { weatherIconsDay, weatherIconsNight } from "@/constants/weatherCode";
 
 export default function Index() {
   const [location, setLocation] = useState(null);
@@ -51,10 +51,9 @@ export default function Index() {
         return;
       }
 
-      fetchWeatherCurrent(
-        location.coords.latitude,
-        location.coords.longitude,
-      ).then((data) => setCurrentWeather(data)).catch(error => setFetchError(true));
+      fetchWeatherCurrent(location.coords.latitude, location.coords.longitude)
+        .then((data) => setCurrentWeather(data))
+        .catch((error) => setFetchError(true));
     };
     load();
   }, [location]);
@@ -67,10 +66,10 @@ export default function Index() {
         setInternetReady(false);
         return;
       }
-      fetchWeatherHourly(
-        location.coords.latitude,
-        location.coords.longitude,
-      ).then((data) => setHourlyWeather(data)).catch(error => setFetchError(true));
+      
+      fetchWeatherHourly(location.coords.latitude, location.coords.longitude)
+        .then((data) => setHourlyWeather(data))
+        .catch((error) => setFetchError(true));
     };
     load();
   }, [location]);
