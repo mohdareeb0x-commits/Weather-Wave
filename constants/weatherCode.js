@@ -21,7 +21,7 @@ const weatherIconsDay = {
     95: {label: "Thunderstorm", icon: "scatteredThunderstorms"},
     96: {label: "Thunderstorm + Hail", icon: "thunderstorms"},
     99: {label: "Heavy Thunderstorm + Hail", icon: "severThunderstorms"},
-}
+};
 
 const weatherIconsNight = {
     0: {label: "Clear Sky", icon: "clearNight"},
@@ -45,6 +45,6 @@ const weatherIconsNight = {
     95: {label: "Thunderstorm", icon: "scatteredThunderstorms"},
     96: {label: "Thunderstorm + Hail", icon: "thunderstorms"},
     99: {label: "Heavy Thunderstorm + Hail", icon: "severThunderstorms"},
-}
+};
 
 export {weatherIconsDay, weatherIconsNight};
