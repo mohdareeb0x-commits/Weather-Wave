@@ -33,6 +33,22 @@ export default function Index() {
     icon: "clearDay",
   };
 
+  const getLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setReqError("location-error");
+        return;
+      }
+      try {
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc);
+        setReqError(null);
+      } catch (error) {
+        console.log(error);
+        setReqError("location-error");
+      }
+    };
+
   const loadData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -41,7 +57,9 @@ export default function Index() {
           AsyncStorage.removeItem(envVar.hourlyKey),
           AsyncStorage.removeItem(envVar.geocodeKey),
         ]);
+        getLocation();
       }
+
       try {
         const [cachedCurrent, cachedHourly, cachedGeocode] = await Promise.all([
           getCache("currentWeather"),
@@ -52,8 +70,12 @@ export default function Index() {
         const hasInternet = await checkInternet();
         if (!hasInternet) {
           setReqError("internet-error");
+          setLoading(false);
+          setRefreshing(false);
           return;
         }
+
+        setReqError(null);
 
         const [freshCurrent, freshHourly, freshGeocode] = await Promise.all([
           cachedCurrent
@@ -98,20 +120,7 @@ export default function Index() {
   };
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setReqError("location-error");
-        return;
-      }
-      try {
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation(loc);
-      } catch (error) {
-        console.log(error);
-        setReqError("location-error");
-      }
-    })();
+    getLocation();
   }, []);
 
   useEffect(() => {
@@ -129,11 +138,29 @@ export default function Index() {
   }
 
   if (requirementErrors === "internet-error") {
-    return <ErrorScreen text="No internet connection" />;
+    return (
+      <ErrorScreen
+        text="No internet connection"
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+      />
+    );
   } else if (requirementErrors === "location-error") {
-    return <ErrorScreen text="Please enable your location" />;
+    return (
+      <ErrorScreen
+        text="Please enable your location"
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+      />
+    );
   } else if (requirementErrors === "fetch-error") {
-    return <ErrorScreen text="Internal server error" />;
+    return (
+      <ErrorScreen
+        text="Internal server error"
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+      />
+    );
   }
 
   let uv = "";
