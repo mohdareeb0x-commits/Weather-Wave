@@ -1,9 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+export const envVar = {
+    currentKey: process.env.EXPO_PUBLIC_CACHE_CURRENT_WEATHER_KEY,
+    hourlyKey: process.env.EXPO_PUBLIC_CACHE_HOURLY_WEATHER_KEY,
+    geocodeKey: process.env.EXPO_PUBLIC_CACHE_GEOCODE_KEY,
+}
+
 const CACHE_CONFIG = {
-  currentWeather: { key: "cache_current_weather", duration: 10 * 60 * 1000 },
-  hourlyWeather: { key: "cache_hourly_weather", duration: 60 * 60 * 1000 },
-  geocode: { key: "cache_geocode", duration: 30 * 60 * 1000 },
+  currentWeather: { key: envVar.currentKey, duration: process.env.EXPO_PUBLIC_CACHE_CURRENT_WEATHER_DURATION },
+  hourlyWeather: { key: envVar.hourlyKey, duration: process.env.EXPO_PUBLIC_CACHE_HOURLY_WEATHER_DURATION},
+  geocode: { key: envVar.geocodeKey, duration: process.env.EXPO_PUBLIC_CACHE_GEOCODE_DURATION },
 };
 
 export const saveCache = async (type, data) => {

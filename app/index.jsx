@@ -1,12 +1,13 @@
-import { Image, ScrollView, View } from "react-native";
+import { Image, RefreshControl, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
 import { useEffect, useState } from "react";
-import { saveCache, getCache } from "@/services/cacheService";
+import { saveCache, getCache, envVar } from "@/services/cacheService";
 import * as Location from "expo-location";
 import SmallCard from "@/components/SmallCard";
 import LoadingScreen from "@/components/LoadingScreen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import ErrorScreen from "@/components/ErrorScreen";
 import MainCard from "@/components/MainCard";
 import fetchWeatherCurrent, { fetchWeatherHourly } from "@/services/api";
@@ -20,6 +21,7 @@ export default function Index() {
   const [hourlyWeather, setHourlyWeather] = useState(null);
   const [loading, setLoading] = useState(true);
   const [requirementErrors, setReqError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const now = new Date();
   const currentHour = now.getHours();
@@ -31,26 +33,15 @@ export default function Index() {
     icon: "clearDay",
   };
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setReqError("location-error");
-        return;
+  const loadData = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        await Promise.all([
+          AsyncStorage.removeItem(envVar.currentKey),
+          AsyncStorage.removeItem(envVar.hourlyKey),
+          AsyncStorage.removeItem(envVar.geocodeKey),
+        ]);
       }
-      try {
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation(loc);
-      } catch (error) {
-        console.log(error);
-        setReqError("location-error");
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (!location) return;
-    const load = async () => {
       try {
         const [cachedCurrent, cachedHourly, cachedGeocode] = await Promise.all([
           getCache("currentWeather"),
@@ -97,13 +88,41 @@ export default function Index() {
         setHourlyWeather(cachedHourly ?? freshHourly);
         setGeocode(cachedGeocode ?? freshGeocode[0]);
         setLoading(false);
+        setRefreshing(false);
       } catch (error) {
         console.log("NEW ERROR", error);
         setReqError("fetch-error");
+        setRefreshing(false);
       }
-    };
-    load();
+    } catch (err) {}
+  };
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setReqError("location-error");
+        return;
+      }
+      try {
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc);
+      } catch (error) {
+        console.log(error);
+        setReqError("location-error");
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!location) return;
+    loadData();
   }, [location]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData(true);
+  };
 
   if (loading && !requirementErrors) {
     return <LoadingScreen />;
@@ -120,7 +139,7 @@ export default function Index() {
   let uv = "";
   if (currentWeather?.uv <= 2) {
     uv = "Very Weak";
-  } else if (currentWeather?.uv >= 3 && currentWeather?.uv <= 6) {
+  } else if (currentWeather?.uv > 2 && currentWeather?.uv < 7) {
     uv = "Weak";
   } else if (currentWeather?.uv >= 7 && currentWeather?.uv <= 10) {
     uv = "Strong";
@@ -135,7 +154,12 @@ export default function Index() {
         resizeMode="cover"
         className="absolute w-full h-full z-0"
       />
-      <ScrollView className="w-full">
+      <ScrollView
+        className="w-full"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <MainCard
           weather={currentWeather}
           geocode={geocode}
