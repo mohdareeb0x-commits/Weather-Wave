@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
 import { useEffect, useState } from "react";
+import { saveCache, getCache } from "@/services/cacheService";
 import * as Location from "expo-location";
 import SmallCard from "@/components/SmallCard";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -33,16 +34,16 @@ export default function Index() {
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted"){ 
-        setReqError("location-error")
+      if (status !== "granted") {
+        setReqError("location-error");
         return;
       }
       try {
         const loc = await Location.getCurrentPositionAsync({});
         setLocation(loc);
-      } catch(error) {
-        console.log(error)
-        setReqError("location-error")
+      } catch (error) {
+        console.log(error);
+        setReqError("location-error");
       }
     })();
   }, []);
@@ -50,30 +51,51 @@ export default function Index() {
   useEffect(() => {
     if (!location) return;
     const load = async () => {
-      const hasInternet = await checkInternet();
-      if (!hasInternet) {
-        setReqError("internet-error");
-        return;
-      }
-
       try {
-        const [currentData, hourlyData, geocode] = await Promise.all([
-          fetchWeatherCurrent(
-            location.coords.latitude,
-            location.coords.longitude,
-          ),
-          fetchWeatherHourly(
-            location.coords.latitude,
-            location.coords.longitude,
-          ),
-          Location.reverseGeocodeAsync({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          }),
+        const [cachedCurrent, cachedHourly, cachedGeocode] = await Promise.all([
+          getCache("currentWeather"),
+          getCache("hourlyWeather"),
+          getCache("geocode"),
         ]);
-        setCurrentWeather(currentData);
-        setHourlyWeather(hourlyData);
-        setGeocode(geocode[0]);
+
+        const hasInternet = await checkInternet();
+        if (!hasInternet) {
+          setReqError("internet-error");
+          return;
+        }
+
+        const [freshCurrent, freshHourly, freshGeocode] = await Promise.all([
+          cachedCurrent
+            ? null
+            : fetchWeatherCurrent(
+                location.coords.latitude,
+                location.coords.longitude,
+              ),
+          cachedHourly
+            ? null
+            : fetchWeatherHourly(
+                location.coords.latitude,
+                location.coords.longitude,
+              ),
+          cachedGeocode
+            ? null
+            : Location.reverseGeocodeAsync({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              }),
+        ]);
+
+        try {
+          if (freshCurrent) saveCache("currentWeather", freshCurrent);
+          if (freshHourly) saveCache("hourlyWeather", freshHourly);
+          if (freshGeocode) saveCache("geocode", freshGeocode[0]);
+        } catch (error) {
+          console.log("NEW CACHE ERROR");
+        }
+
+        setCurrentWeather(cachedCurrent ?? freshCurrent);
+        setHourlyWeather(cachedHourly ?? freshHourly);
+        setGeocode(cachedGeocode ?? freshGeocode[0]);
         setLoading(false);
       } catch (error) {
         console.log("NEW ERROR", error);
