@@ -26,7 +26,7 @@ export const saveCache = async (type, data) => {
     const { key } = CACHE_CONFIG[type];
     const payload = { timestamp: Date.now(), data };
     await AsyncStorage.setItem(key, JSON.stringify(payload));
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -42,7 +42,7 @@ export const getCache = async (type) => {
     console.log("duration", Date.now() - timestamp);
 
     return data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };

@@ -37,7 +37,7 @@ const fetchWeatherCurrent = async (latitude1, longitude1) => {
     console.log(weatherData);
     return weatherData;
   } catch (err) {
-    throw new Error("Internal server error");
+    throw new Error(err);
   }
 };
 const fetchWeatherHourly = async (latitude1, longitude1) => {
@@ -61,7 +61,7 @@ const fetchWeatherHourly = async (latitude1, longitude1) => {
     };
     return weatherData;
   } catch (err) {
-    throw new Error("Internal server error");
+    throw new Error(err);
   }
 };
 
