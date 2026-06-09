@@ -2,7 +2,7 @@ import { Image, RefreshControl, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { icons } from "@/constants/icons";
 import { images } from "@/constants/images";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { saveCache, getCache, envVar } from "@/services/cacheService";
 import * as Location from "expo-location";
 import SmallCard from "@/components/SmallCard";
@@ -23,6 +23,9 @@ export default function Index() {
   const [requirementErrors, setReqError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const locationRef = useRef(null);
+  const isRefreshingRef = useRef(false);
+
   const now = new Date();
   const currentHour = now.getHours();
 
@@ -34,30 +37,34 @@ export default function Index() {
   };
 
   const getLocation = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setReqError("location-error");
-        return;
-      }
-      try {
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation(loc);
-        setReqError(null);
-      } catch (error) {
-        console.log(error);
-        setReqError("location-error");
-      }
-    };
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      setReqError("location-error");
+      return;
+    }
+    try {
+      const loc = await Location.getCurrentPositionAsync({});
+      locationRef.current = loc;
+      setLocation(loc);
+      setReqError(null);
+    } catch (error) {
+      console.log(error);
+      setReqError("location-error");
+    }
+  };
 
   const loadData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
+        isRefreshingRef.current = true;
+
         await Promise.all([
           AsyncStorage.removeItem(envVar.currentKey),
           AsyncStorage.removeItem(envVar.hourlyKey),
           AsyncStorage.removeItem(envVar.geocodeKey),
         ]);
-        getLocation();
+
+        await getLocation();
       }
 
       try {
@@ -81,20 +88,20 @@ export default function Index() {
           cachedCurrent
             ? null
             : fetchWeatherCurrent(
-                location.coords.latitude,
-                location.coords.longitude,
+                locationRef.current.coords.latitude,
+                locationRef.current.coords.longitude,
               ),
           cachedHourly
             ? null
             : fetchWeatherHourly(
-                location.coords.latitude,
-                location.coords.longitude,
+                locationRef.current.coords.latitude,
+                locationRef.current.coords.longitude,
               ),
           cachedGeocode
             ? null
             : Location.reverseGeocodeAsync({
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
+                latitude: locationRef.current.coords.latitude,
+                longitude: locationRef.current.coords.longitude,
               }),
         ]);
 
@@ -116,7 +123,11 @@ export default function Index() {
         setReqError("fetch-error");
         setRefreshing(false);
       }
-    } catch (err) {}
+    } catch (err) {
+      console.log("load data error");
+    } finally {
+      isRefreshingRef.current = false;
+    }
   };
 
   useEffect(() => {
@@ -125,6 +136,7 @@ export default function Index() {
 
   useEffect(() => {
     if (!location) return;
+    if (isRefreshingRef.current) return;
     loadData();
   }, [location]);
 
